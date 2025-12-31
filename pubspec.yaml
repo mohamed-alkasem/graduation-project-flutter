@@ -1,0 +1,35 @@
+name: bitirmetezimobil
+description: "A new Flutter project"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Firebase packages - إصدارات متوافقة
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.3
+  cloud_firestore: ^6.1.1
+  firebase_storage: ^13.0.5
+
+  provider: ^6.1.1
+  image_picker: ^1.0.4
+  intl: ^0.20.2
+  shared_preferences: ^2.2.2
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # الأصول - إذا ما عندك assets شيل السطر
+  # assets:
+  #   - assets/flutf

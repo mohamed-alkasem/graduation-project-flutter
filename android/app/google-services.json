@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "316516565076",
+    "firebase_url": "https://bitirmetezi-66376-default-rtdb.firebaseio.com",
+    "project_id": "bitirmetezi-66376",
+    "storage_bucket": "bitirmetezi-66376.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:316516565076:android:85a734db42d151b830adc1",
+        "android_client_info": {
+          "package_name": "com.example.bitirmetezimobil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdf2ybTX3ve_mZ4Dt-OGE7RNMmLA0FcYc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
