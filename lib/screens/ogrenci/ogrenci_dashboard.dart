@@ -7,6 +7,7 @@ import '../../core/firebase/auth_service.dart';
 import '../auth/welcome_screen.dart';
 import 'portfolio_screen.dart';
 import 'projects_screen.dart';
+import 'ogrenci_profile_screen.dart';
 class OgrenciDashboard extends StatefulWidget {
   final String email;
 
@@ -602,7 +603,14 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
               title: 'Profilim',
               icon: Icons.person,
               color: const Color(0xFFE74C3C),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OgrenciProfileScreen(),
+                  ),
+                );
+              },
             ),
             _buildQuickAccessButton(
               title: 'Şirketler',

@@ -304,6 +304,93 @@ class AuthService {
     }
   }
 
+  // Öğrenci profilini güncelle
+  Future<void> updateStudentProfile({
+    required String userId,
+    required String name,
+    required String university,
+    required String department,
+    required String studentNo,
+    String? phone,
+    List<String>? skills,
+    String? bio,
+  }) async {
+    try {
+      final updateData = _cleanData({
+        'name': name,
+        'university': university,
+        'department': department,
+        'studentNo': studentNo,
+        'phone': phone,
+        'skills': skills,
+        'bio': bio,
+      });
+
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set(updateData, SetOptions(merge: true))
+          .timeout(_timeoutDuration);
+
+      print('✅ Öğrenci profili güncellendi');
+    } catch (e) {
+      print('Öğrenci profili güncellenemedi: $e');
+      rethrow;
+    }
+  }
+
+  // Şirket profilini güncelle
+  Future<void> updateCompanyProfile({
+    required String userId,
+    required String companyName,
+    required String contactPerson,
+    required String sector,
+    required String address,
+    required String phone,
+    String? website,
+    String? companyDescription,
+  }) async {
+    try {
+      final updateData = _cleanData({
+        'companyName': companyName,
+        'name': contactPerson,
+        'sector': sector,
+        'address': address,
+        'companyPhone': phone,
+        'website': website,
+        'companyDescription': companyDescription,
+      });
+
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set(updateData, SetOptions(merge: true))
+          .timeout(_timeoutDuration);
+
+      print('✅ Şirket profili güncellendi');
+    } catch (e) {
+      print('Şirket profili güncellenemedi: $e');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> _cleanData(Map<String, dynamic?> data) {
+    final cleaned = <String, dynamic>{};
+    data.forEach((key, value) {
+      if (value == null) return;
+      if (value is String) {
+        if (value.trim().isEmpty) return;
+        cleaned[key] = value.trim();
+      } else if (value is List) {
+        if (value.isEmpty) return;
+        cleaned[key] = value;
+      } else {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  }
+
   // Yardımcı fonksiyon: Collection var mı kontrol et
   Future<bool> _checkCollectionExists(String collectionName) async {
     try {

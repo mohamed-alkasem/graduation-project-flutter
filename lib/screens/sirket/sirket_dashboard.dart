@@ -1,5 +1,6 @@
 // lib/screens/sirket/sirket_dashboard.dart
 import 'package:flutter/material.dart';
+import 'sirket_profile_screen.dart';
 
 class SirketDashboard extends StatelessWidget {
   final String email;
@@ -140,7 +141,14 @@ class SirketDashboard extends StatelessWidget {
                   title: 'Profilim',
                   icon: Icons.person,
                   color: const Color(0xFF3498DB),
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SirketProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildQuickAccessCard(
                   title: 'Ayarlar',

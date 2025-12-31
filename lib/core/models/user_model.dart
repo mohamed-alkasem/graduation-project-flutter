@@ -14,6 +14,7 @@ class UserModel {
   String? department;
   String? phone;
   List<String>? skills;
+  String? bio;
 
   // For Company
   String? companyName;
@@ -21,6 +22,7 @@ class UserModel {
   String? companyPhone;
   String? website;
   String? address;
+  String? companyDescription;
 
   UserModel({
     this.id,
@@ -35,6 +37,7 @@ class UserModel {
     this.department,
     this.phone,
     this.skills,
+    this.bio,
 
     // Company fields
     this.companyName,
@@ -42,6 +45,7 @@ class UserModel {
     this.companyPhone,
     this.website,
     this.address,
+    this.companyDescription,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -78,6 +82,7 @@ class UserModel {
       department: map['department']?.toString(),
       phone: map['phone']?.toString(),
       skills: skillsList,
+      bio: map['bio']?.toString(),
 
       // Company fields
       companyName: map['companyName']?.toString(),
@@ -85,6 +90,7 @@ class UserModel {
       companyPhone: map['companyPhone']?.toString(),
       website: map['website']?.toString(),
       address: map['address']?.toString(),
+      companyDescription: map['companyDescription']?.toString(),
     );
   }
 
@@ -101,6 +107,7 @@ class UserModel {
       if (department != null && department!.isNotEmpty) 'department': department,
       if (phone != null && phone!.isNotEmpty) 'phone': phone,
       if (skills != null && skills!.isNotEmpty) 'skills': skills,
+      if (bio != null && bio!.isNotEmpty) 'bio': bio,
 
       // Company fields
       if (companyName != null && companyName!.isNotEmpty) 'companyName': companyName,
@@ -108,6 +115,8 @@ class UserModel {
       if (companyPhone != null && companyPhone!.isNotEmpty) 'companyPhone': companyPhone,
       if (website != null && website!.isNotEmpty) 'website': website,
       if (address != null && address!.isNotEmpty) 'address': address,
+      if (companyDescription != null && companyDescription!.isNotEmpty)
+        'companyDescription': companyDescription,
     };
   }
 
@@ -145,11 +154,13 @@ class UserModel {
       department: json['department'],
       phone: json['phone'],
       skills: json['skills'] != null ? List<String>.from(json['skills']) : null,
+      bio: json['bio'],
       companyName: json['companyName'],
       sector: json['sector'],
       companyPhone: json['companyPhone'],
       website: json['website'],
       address: json['address'],
+      companyDescription: json['companyDescription'],
     );
   }
 
@@ -202,11 +213,13 @@ class UserModel {
     String? department,
     String? phone,
     List<String>? skills,
+    String? bio,
     String? companyName,
     String? sector,
     String? companyPhone,
     String? website,
     String? address,
+    String? companyDescription,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -219,11 +232,13 @@ class UserModel {
       department: department ?? this.department,
       phone: phone ?? this.phone,
       skills: skills ?? this.skills,
+      bio: bio ?? this.bio,
       companyName: companyName ?? this.companyName,
       sector: sector ?? this.sector,
       companyPhone: companyPhone ?? this.companyPhone,
       website: website ?? this.website,
       address: address ?? this.address,
+      companyDescription: companyDescription ?? this.companyDescription,
     );
   }
 
