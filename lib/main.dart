@@ -1,14 +1,23 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+
 import 'firebase_options.dart';
+
+// Auth
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/ogrenci/ogrenci_login.dart';
 import 'screens/auth/ogrenci/ogrenci_register.dart';
 import 'screens/auth/sirket/sirket_login.dart';
 import 'screens/auth/sirket/sirket_register.dart';
+
+// Dashboards
 import 'screens/ogrenci/ogrenci_dashboard.dart';
 import 'screens/sirket/sirket_dashboard.dart';
+
+// Profiles
+import 'screens/ogrenci/ogrenci_profile_screen.dart';
+import 'screens/sirket/sirket_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,22 +44,33 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      // خليت بس routes واحذفت home
+
       initialRoute: '/',
       routes: {
         '/': (context) => const WelcomeScreen(),
+
+        // Öğrenci
         '/ogrenci/login': (context) => const OgrenciLogin(),
         '/ogrenci/register': (context) => const OgrenciRegister(),
-        '/ogrenci/dashboard': (context) => const OgrenciDashboard(email: ''),
+
+        // ✅ بدون email
+        '/ogrenci/dashboard': (context) => const OgrenciDashboard(),
+
+        // ✅ بروفايل الطالب الصحيح
+        '/ogrenci/profile': (context) => const OgrenciProfileScreen(),
+
+        // Şirket
         '/sirket/login': (context) => const SirketLogin(),
         '/sirket/register': (context) => const SirketRegister(),
-        '/sirket/dashboard': (context) => const SirketDashboard(email: ''),
+
+        // ✅ بدون email
+        '/sirket/dashboard': (context) => const SirketDashboard(),
+
       },
+
       onGenerateRoute: (settings) {
         if (settings.name == '/login') {
-          return MaterialPageRoute(
-            builder: (context) => const OgrenciLogin(),
-          );
+          return MaterialPageRoute(builder: (context) => const OgrenciLogin());
         }
         return null;
       },

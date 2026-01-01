@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:bitirmetezimobil/widgets/custom_text_field.dart';
 import 'package:bitirmetezimobil/widgets/gradient_button.dart';
+import '../../../core/firebase/auth_service.dart';
 import '../../../screens/auth/sirket/sirket_login.dart';
 
 class SirketRegister extends StatefulWidget {
@@ -417,41 +418,102 @@ class _SirketRegisterState extends State<SirketRegister> {
     );
   }
 
+  // في sirket_register.dart - تحديث دالة _registerCompany
   Future<void> _registerCompany() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // TODO: Firebase kayıt işlemleri burada yapılacak
-      // AuthService().registerCompany(...)
+      try {
+        final AuthService authService = AuthService();
 
-      await Future.delayed(const Duration(seconds: 2)); // Simülasyon
+        final user = await authService.registerCompany(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          companyName: _companyNameController.text.trim(),
+          contactPerson: _contactPersonController.text.trim(),
+          phone: _phoneController.text.trim(),
+          sector: _selectedSector,
+          address: _addressController.text.trim(),
+          website: _websiteController.text.trim().isNotEmpty
+              ? _websiteController.text.trim()
+              : null,
+          taxNo: _taxNoController.text.trim().isNotEmpty
+              ? _taxNoController.text.trim()
+              : null,
+        );
 
-      setState(() => _isLoading = false);
-
-      // Başarılı kayıt sonrası
-      _showSuccessDialog();
+        if (user != null) {
+          // إظهار رسالة نجاح خاصة
+          _showSuccessDialog(user.email!);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(String userEmail) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('✅ Şirket Kaydı Başarılı!'),
-        content: const Text(
-          'Şirket hesabınız başarıyla oluşturuldu. '
-              'Hesabınız yönetici onayından sonra aktif olacaktır. '
-              'Onay süreci genellikle 24 saat içinde tamamlanır.',
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 10),
+            Text('Başarılı!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Şirket hesabınız başarıyla oluşturuldu!',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '🔒 Hesap Durumu:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 5),
+            const Text('• E-posta doğrulama bağlantısı gönderildi'),
+            const Text('• Yönetici onayı bekleniyor'),
+            const SizedBox(height: 10),
+            const Text(
+              '📋 Yapmanız gerekenler:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 5),
+            const Text('1. E-posta adresinizi doğrulayın'),
+            const Text('2. Yönetici onayını bekleyin (24 saat)'),
+            const Text('3. Onay sonrası giriş yapabilirsiniz'),
+            const SizedBox(height: 15),
+            Text(
+              'Yönetici E-posta: hm.alkasem@gmail.com',
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Dialog'u kapat
+              Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SirketLogin(),
-                ),
+                MaterialPageRoute(builder: (context) => const SirketLogin()),
               );
             },
             child: const Text('TAMAM'),

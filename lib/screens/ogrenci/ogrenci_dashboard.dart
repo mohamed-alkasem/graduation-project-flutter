@@ -1,28 +1,35 @@
 // lib/screens/ogrenci/ogrenci_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../widgets/gradient_button.dart';
+
 import '../../core/firebase/auth_service.dart';
-import '../auth/welcome_screen.dart';
+import '../../core/models/user_model.dart';
+import '../../core/services/notification_service.dart';
+import '../../widgets/gradient_button.dart';
+
 import 'portfolio_screen.dart';
 import 'projects_screen.dart';
-import 'ogrenci_profile_screen.dart';
-class OgrenciDashboard extends StatefulWidget {
-  final String email;
+import 'ogrenci_profile_screen.dart'; // ✅ الصفحة الجديدة اللي تعتمد users
+import 'quizzes_screen.dart';
+import 'internship_requests_screen.dart';
+import 'notifications_screen.dart';
 
-  const OgrenciDashboard({super.key, required this.email});
+class OgrenciDashboard extends StatefulWidget {
+  const OgrenciDashboard({super.key});
 
   @override
-  _OgrenciDashboardState createState() => _OgrenciDashboardState();
+  State<OgrenciDashboard> createState() => _OgrenciDashboardState();
 }
+
 
 class _OgrenciDashboardState extends State<OgrenciDashboard> {
   final AuthService _authService = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  late User? _currentUser;
-  Map<String, dynamic>? _studentData;
+  final NotificationService _notificationService = NotificationService();
+
+  User? _currentUser;
+  UserModel? _student;
   bool _isLoading = true;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -30,97 +37,88 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     _loadUserData();
   }
 
-// في دالة _loadUserData في ogrenci_dashboard.dart
-  // في دالة _loadUserData في ogrenci_dashboard.dart
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   Future<void> _loadUserData() async {
     setState(() => _isLoading = true);
 
     try {
       _currentUser = _authService.getCurrentUser();
+      if (_currentUser == null) {
+        // ما في جلسة
+        setState(() => _student = null);
+        return;
+      }
 
-      if (_currentUser != null) {
-        print('Kullanıcı ID: ${_currentUser!.uid}');
-        print('E-posta: ${_currentUser!.email}');
+      final data = await _authService.getUserData(_currentUser!.uid);
 
-        // Önce öğrenci verilerini al
-        _studentData = await _authService.getStudentData(_currentUser!.uid);
-
-        // Eğer veri yoksa, kullanıcı bilgilerini al
-        if (_studentData == null) {
-          print('Öğrenci verisi bulunamadı, demo veri kullanılıyor...');
-          _studentData = {
-            'name': widget.email.split('@').first,
-            'university': 'Üniversite',
-            'department': 'Bölüm',
-            'studentNo': '000000',
-            'portfolioCount': 0,
-            'completedProjects': 0,
-            'averageRating': 5.0,
-            'views': 0,
-            'connections': 0,
-          };
-        }
-
-        print('Öğrenci verileri yüklendi: $_studentData');
+      if (data != null) {
+        setState(() => _student = data);
       } else {
-        print('Kullanıcı oturumu bulunamadı');
+        // fallback: لو ما لقى doc بالـ users
+        setState(() {
+          final fallbackEmail = _currentUser?.email ?? '';
+          final fallbackName = (_currentUser?.displayName?.trim().isNotEmpty == true)
+              ? _currentUser!.displayName!.trim()
+              : (fallbackEmail.isNotEmpty ? fallbackEmail.split('@').first : 'Öğrenci');
+
+          _student = UserModel(
+            id: _currentUser!.uid,
+            email: fallbackEmail,
+            name: fallbackName,
+            role: 'ogrenci',
+            createdAt: DateTime.now(),
+            university: 'Üniversiteniz',
+            department: 'Bölümünüz',
+            studentNo: '000000',
+            skills: const [],
+            status: 'active',
+          );
+
+        });
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Veri yükleme hatası: $e');
-      // Demo veri kullan
-      _studentData = {
-        'name': widget.email.split('@').first,
-        'university': 'Demo Üniversite',
-        'department': 'Demo Bölüm',
-        'studentNo': '000000',
-        'portfolioCount': 0,
-        'completedProjects': 0,
-        'averageRating': 5.0,
-        'views': 0,
-        'connections': 0,
-      };
+
+      // Demo fallback
+      setState(() {
+        final fallbackEmail = _currentUser?.email ?? '';
+        final fallbackName = (_currentUser?.displayName?.trim().isNotEmpty == true)
+            ? _currentUser!.displayName!.trim()
+            : (fallbackEmail.isNotEmpty ? fallbackEmail.split('@').first : 'Öğrenci');
+
+        _student = UserModel(
+          id: _currentUser!.uid,
+          email: fallbackEmail,
+          name: fallbackName,
+          role: 'ogrenci',
+          createdAt: DateTime.now(),
+          university: 'Üniversiteniz',
+          department: 'Bölümünüz',
+          studentNo: '000000',
+          skills: const [],
+          status: 'active',
+        );
+
+      });
     } finally {
-      // Kısa bir gecikme ekle (UI için)
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showErrorDialog(String message) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Hata'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _loadUserData(); // Tekrar deneme
-              },
-              child: const Text('Tekrar Dene'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context); // Dashboard'tan çık
-              },
-              child: const Text('Tamam'),
-            ),
-          ],
-        ),
-      );
-    });
+  Future<void> _refreshData() async {
+    await _loadUserData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: _isLoading
-          ? _buildLoadingScreen()
-          : _buildDashboard(),
+      body: _isLoading ? _buildLoadingScreen() : _buildDashboard(),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -132,7 +130,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
           CircularProgressIndicator(color: Color(0xFF1ABC9C)),
           SizedBox(height: 20),
           Text(
-            'Profil yükleniyor...',
+            'Yükleniyor...',
             style: TextStyle(
               color: Color(0xFF2C3E50),
               fontSize: 16,
@@ -147,119 +145,166 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     return SafeArea(
       child: Column(
         children: [
-          // AppBar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1ABC9C),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Profil Avatar
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Color(0xFF1ABC9C),
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Kullanıcı Bilgileri
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _studentData?['name'] ?? 'Öğrenci',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        _studentData?['university'] ?? 'Üniversite',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
-                      ),
-                      Text(
-                        '${_studentData?['department'] ?? 'Bölüm'} - ${_studentData?['studentNo'] ?? 'Öğrenci No'}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Bildirim ve Çıkış
-                IconButton(
-                  icon: const Icon(Icons.notifications_none, color: Colors.white),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: _logout,
-                ),
-              ],
-            ),
-          ),
+          _buildTopHeader(),
 
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Hoşgeldin Kartı
-                  _buildWelcomeCard(),
-
-                  const SizedBox(height: 30),
-
-                  // Yetenek Skoru
-                  _buildTalentScoreCard(),
-
-                  const SizedBox(height: 30),
-
-                  // İstatistikler
-                  _buildStatisticsSection(),
-
-                  const SizedBox(height: 30),
-
-                  // Hızlı Erişim
-                  _buildQuickAccessSection(),
-
-                  const SizedBox(height: 30),
-
-                  // Son Aktivite
-                  _buildRecentActivity(),
-                ],
-              ),
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildHomeTab(),
+                const ProjectsScreen(),
+                const QuizzesScreen(),
+                const InternshipRequestsScreen(),
+                const OgrenciProfileScreen(),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1ABC9C),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Icons.person, color: Color(0xFF1ABC9C), size: 30),
+          ),
+          const SizedBox(width: 16),
+
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _student?.name.isNotEmpty == true ? _student!.name : 'Öğrenci',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  _student?.university ?? 'Üniversite',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  '${_student?.department ?? 'Bölüm'} - ${_student?.studentNo ?? 'Öğrenci No'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              );
+            },
+            icon: StreamBuilder<int>(
+              stream: _currentUser != null
+                  ? _notificationService.streamUnreadCount(_currentUser!.uid)
+                  : Stream.value(0),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                return Stack(
+                  children: [
+                    const Icon(Icons.notifications, color: Colors.white, size: 28),
+                    if (count > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            count > 9 ? '9+' : count.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            tooltip: 'Bildirimler',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshData,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeTab() {
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      color: const Color(0xFF1ABC9C),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildWelcomeCard(),
+            const SizedBox(height: 30),
+            _buildTalentScoreCard(),
+            const SizedBox(height: 30),
+            _buildStatisticsSection(),
+            const SizedBox(height: 30),
+            _buildQuickAccessSection(),
+            const SizedBox(height: 30),
+            _buildRecentActivity(),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -287,13 +332,10 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 26, 188, 156),
+                  color: const Color(0xFF1ABC9C).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.emoji_events,
-                  color: Color(0xFF1ABC9C),
-                ),
+                child: const Icon(Icons.emoji_events, color: Color(0xFF1ABC9C)),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -301,7 +343,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Başarılarını Paylaş!',
+                      'Hoş Geldin!',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -309,11 +351,8 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                       ),
                     ),
                     Text(
-                      'Projelerini yükle, yeteneklerini sergile',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      'Başarılarını paylaş, yeteneklerini keşfet',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -338,8 +377,9 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     );
   }
 
+  // ✅ حاليا ما عندك rating حقيقي من DB، خليها 0 أو اعملها من users إذا حبيت
   Widget _buildTalentScoreCard() {
-    double score = _studentData?['averageRating'] ?? 0.0;
+    final double score = 0.0;
 
     return Container(
       width: double.infinity,
@@ -353,7 +393,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 15,
             spreadRadius: 2,
           ),
@@ -361,12 +401,11 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
       ),
       child: Row(
         children: [
-          // Skor Göstergesi
           Container(
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
+              color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -381,20 +420,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                       color: Colors.white,
                     ),
                   ),
-                  const Text(
-                    '/10',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color.fromARGB(255, 255, 255, 255),
-                    ),
-                  ),
+                  const Text('/10', style: TextStyle(fontSize: 14, color: Colors.white)),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 20),
-
-          // Skor Detayları
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,15 +441,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                 const SizedBox(height: 8),
                 Text(
                   _getTalentLevel(score),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 const SizedBox(height: 12),
                 LinearProgressIndicator(
                   value: score / 10,
-                  backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                  backgroundColor: Colors.white.withOpacity(0.3),
                   color: const Color(0xFF1ABC9C),
                   minHeight: 8,
                   borderRadius: BorderRadius.circular(4),
@@ -426,10 +454,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                 const SizedBox(height: 8),
                 Text(
                   '${(score * 10).toInt()}% tamamlandı',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
                 ),
               ],
             ),
@@ -440,6 +465,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   }
 
   Widget _buildStatisticsSection() {
+    // إذا بدك توصلها من DB لاحقاً، هون مكانها
+    const portfolioCount = '0';
+    const completedProjects = '0';
+    const views = '0';
+    const connections = '0';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -452,13 +483,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
           ),
         ),
         const SizedBox(height: 16),
-
         Row(
           children: [
             Expanded(
               child: _buildStatItem(
                 title: 'Portföy',
-                value: _studentData?['portfolioCount']?.toString() ?? '0',
+                value: portfolioCount,
                 icon: Icons.assignment,
                 color: const Color(0xFF3498DB),
               ),
@@ -467,7 +497,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
             Expanded(
               child: _buildStatItem(
                 title: 'Projeler',
-                value: _studentData?['completedProjects']?.toString() ?? '0',
+                value: completedProjects,
                 icon: Icons.code,
                 color: const Color(0xFF1ABC9C),
               ),
@@ -480,7 +510,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
             Expanded(
               child: _buildStatItem(
                 title: 'İnceleme',
-                value: _studentData?['views']?.toString() ?? '0',
+                value: views,
                 icon: Icons.remove_red_eye,
                 color: const Color(0xFFE74C3C),
               ),
@@ -489,7 +519,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
             Expanded(
               child: _buildStatItem(
                 title: 'Bağlantı',
-                value: _studentData?['connections']?.toString() ?? '0',
+                value: connections,
                 icon: Icons.connect_without_contact,
                 color: const Color(0xFF9B59B6),
               ),
@@ -523,11 +553,8 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 12),
           Column(
@@ -535,18 +562,11 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
             children: [
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
               ),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF7F8C8D),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
               ),
             ],
           ),
@@ -561,14 +581,9 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
       children: [
         const Text(
           '🚀 Hızlı Erişim',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
         ),
         const SizedBox(height: 16),
-
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -581,42 +596,29 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
               title: 'Portföyüm',
               icon: Icons.assignment,
               color: const Color(0xFF3498DB),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PortfolioScreen()),
-                );
-              },
+              onTap: () => setState(() => _selectedIndex = 2),
             ),
             _buildQuickAccessButton(
               title: 'Projelerim',
               icon: Icons.folder,
               color: const Color(0xFF1ABC9C),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProjectsScreen()),
-                );
-              },
+              onTap: () => setState(() => _selectedIndex = 1),
             ),
             _buildQuickAccessButton(
               title: 'Profilim',
               icon: Icons.person,
               color: const Color(0xFFE74C3C),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const OgrenciProfileScreen(),
-                  ),
-                );
-              },
+              onTap: () => setState(() => _selectedIndex = 3),
             ),
             _buildQuickAccessButton(
               title: 'Şirketler',
               icon: Icons.business,
               color: const Color(0xFF9B59B6),
-              onTap: () {},
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Şirketler sayfası yakında eklenecek')),
+                );
+              },
             ),
           ],
         ),
@@ -635,21 +637,18 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: color,
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 40),
+            Icon(icon, color: color, size: 40),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: color),
             ),
           ],
         ),
@@ -663,25 +662,16 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
       children: [
         const Text(
           '📝 Son Aktivite',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
         ),
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, spreadRadius: 2),
             ],
           ),
           child: Column(
@@ -727,11 +717,8 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -749,22 +736,33 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF7F8C8D),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
               ),
             ],
           ),
         ),
-        Text(
-          time,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFFBDC3C7),
-          ),
-        ),
+        Text(time, style: const TextStyle(fontSize: 12, color: Color(0xFFBDC3C7))),
       ],
+    );
+  }
+
+  BottomNavigationBar _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      items: const <BottomNavigationBarItem>[
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Anasayfa'),
+        BottomNavigationBarItem(icon: Icon(Icons.folder), label: 'Projeler'),
+        BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quizler'),
+        BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Stajlar'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: const Color(0xFF1ABC9C),
+      unselectedItemColor: const Color(0xFF95A5A6),
+      showUnselectedLabels: true,
+      backgroundColor: Colors.white,
+      elevation: 10,
+      onTap: _onItemTapped,
     );
   }
 
@@ -774,35 +772,5 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     if (score >= 5) return 'Orta Seviye';
     if (score >= 3) return 'Başlangıç Seviye';
     return 'Yeni Başladı';
-  }
-
-// في دالة _logout في ogrenci_dashboard.dart - تحديث السطر 728
-  Future<void> _logout() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Çıkış Yap'),
-        content: const Text('Hesabınızdan çıkış yapmak istediğinize emin misiniz?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _authService.logout();
-              // تصحيح: استخدام MaterialPageRoute بدلاً من pushNamedAndRemoveUntil
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-                    (route) => false,
-              );
-            },
-            child: const Text('Çıkış Yap', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
   }
 }

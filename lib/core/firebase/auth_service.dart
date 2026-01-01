@@ -1,7 +1,7 @@
 // lib/core/firebase/auth_service.dart
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user_model.dart';
 
@@ -10,10 +10,27 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // Timeout süresi
   static const Duration _timeoutDuration = Duration(seconds: 15);
 
-  // Kayıt ol - Öğrenci (مصحح)
+  // ===== Email verification (اختياري) =====
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  bool isEmailVerified() => _auth.currentUser?.emailVerified ?? false;
+
+  // ===== Helpers =====
+  User? getCurrentUser() => _auth.currentUser;
+  String? getCurrentUid() => _auth.currentUser?.uid;
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserDoc(String uid) async {
+    return _firestore.collection('users').doc(uid).get().timeout(_timeoutDuration);
+  }
+
+  // ===== Register Student =====
   Future<UserModel?> registerStudent({
     required String email,
     required String password,
@@ -25,10 +42,7 @@ class AuthService {
     List<String>? skills,
   }) async {
     try {
-      print('Öğrenci kaydı başlıyor: $email');
-
-      // 1. Firebase Authentication ile kullanıcı oluştur
-      UserCredential userCredential = await _auth
+      final userCredential = await _auth
           .createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -36,10 +50,8 @@ class AuthService {
           .timeout(_timeoutDuration);
 
       final userId = userCredential.user!.uid;
-      print('Firebase Auth başarılı, User ID: $userId');
 
-      // 2. Kullanıcı bilgilerini Firestore'a kaydet
-      UserModel userModel = UserModel(
+      final userModel = UserModel(
         id: userId,
         email: email.trim(),
         name: name.trim(),
@@ -50,48 +62,34 @@ class AuthService {
         department: department.trim(),
         phone: phone?.trim(),
         skills: skills ?? [],
+        status: 'active',
       );
 
-      print('UserModel oluşturuldu, Firestore kaydı başlıyor...');
-
-      // فقط users koleksiyonuna kaydet - احذف students مؤقتاً
       await _firestore
           .collection('users')
           .doc(userId)
-          .set(userModel.toMap())
+          .set(userModel.toMap(isUpdate: false), SetOptions(merge: true))
           .timeout(_timeoutDuration);
 
-      print('✅ Öğrenci kaydı başarılı! Kullanıcı users koleksiyonuna kaydedildi.');
-
       return userModel;
-
     } on TimeoutException {
-      print('❌ Öğrenci kaydı timeout!');
-      throw Exception('İşlem zaman aşımına uğradı. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.');
+      throw Exception('İşlem zaman aşımına uğradı.');
     } on FirebaseAuthException catch (e) {
-      print('Firebase Auth Exception: ${e.code} - ${e.message}');
       if (e.code == 'weak-password') {
         throw Exception('Şifre çok zayıf. En az 6 karakter olmalı.');
       } else if (e.code == 'email-already-in-use') {
         throw Exception('Bu e-posta adresi zaten kullanımda.');
       } else if (e.code == 'invalid-email') {
         throw Exception('Geçersiz e-posta adresi.');
-      } else if (e.code == 'operation-not-allowed') {
-        throw Exception('E-posta/şifre ile giriş etkin değil.');
-      } else {
-        throw Exception('Kayıt başarısız: ${e.message}');
       }
-    } on FirebaseException catch (e) {
-      print('Firestore Exception: ${e.code} - ${e.message}');
-      throw Exception('Veritabanı hatası: ${e.message}');
-    } catch (e, stackTrace) {
-      print('Genel Exception: $e');
-      print('Stack Trace: $stackTrace');
-      throw Exception('Kayıt sırasında beklenmeyen bir hata oluştu: ${e.toString()}');
+      throw Exception('Kayıt başarısız: ${e.message}');
+    } catch (e) {
+      throw Exception('Kayıt sırasında hata oluştu: $e');
     }
   }
 
-  // Kayıt ol - Şirket (مصحح)
+  // ===== Register Company =====
+  // ===== Register Company =====
   Future<UserModel?> registerCompany({
     required String email,
     required String password,
@@ -104,10 +102,7 @@ class AuthService {
     String? taxNo,
   }) async {
     try {
-      print('Şirket kaydı başlıyor: $email');
-
-      // 1. Firebase Authentication ile kullanıcı oluştur
-      UserCredential userCredential = await _auth
+      final userCredential = await _auth
           .createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -115,13 +110,12 @@ class AuthService {
           .timeout(_timeoutDuration);
 
       final userId = userCredential.user!.uid;
-      print('Firebase Auth başarılı, User ID: $userId');
 
-      // 2. Kullanıcı bilgilerini Firestore'a kaydet
-      UserModel userModel = UserModel(
+      // ✅ 1) users collection (أساسي فقط)
+      final userModel = UserModel(
         id: userId,
         email: email.trim(),
-        name: contactPerson.trim(),
+        name: contactPerson.trim(), // نخزن contactPerson داخل name
         role: 'sirket',
         createdAt: DateTime.now(),
         companyName: companyName.trim(),
@@ -129,78 +123,87 @@ class AuthService {
         companyPhone: phone.trim(),
         website: website?.trim(),
         address: address.trim(),
+        companyDescription: null,
+        status: 'active',
       );
 
-      print('UserModel oluşturuldu, Firestore kaydı başlıyor...');
-
-      // فقط users koleksiyonuna kaydet - احذف companies مؤقتاً
       await _firestore
           .collection('users')
           .doc(userId)
-          .set(userModel.toMap())
+          .set(userModel.toMap(isUpdate: false), SetOptions(merge: true))
           .timeout(_timeoutDuration);
 
-      print('✅ Şirket kaydı başarılı! Kullanıcı users koleksiyonuna kaydedildi.');
+      // ✅ 2) profiles collection (تفاصيل الشركة)
+      final profileData = _cleanData({
+        'userId': userId,
+        'email': email.trim(),
+        'name': contactPerson.trim(),
+        'role': 'sirket',
+        'companyName': companyName.trim(),
+        'contactPerson': contactPerson.trim(),
+        'companyPhone': phone.trim(),
+        'sector': sector.trim(),
+        'address': address.trim(),
+        'website': website?.trim(),
+        'taxNo': taxNo?.trim(),
+        'status': 'pending', // أو active حسب نظامك
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await _firestore
+          .collection('profiles')
+          .doc(userId) // ✅ نفس uid
+          .set(profileData, SetOptions(merge: true))
+          .timeout(_timeoutDuration);
 
       return userModel;
-
     } on TimeoutException {
-      print('❌ Şirket kaydı timeout!');
-      throw Exception('İşlem zaman aşımına uğradı. Lütfen internet bağlantınızı kontrol edin.');
+      throw Exception('İşlem zaman aşımına uğradı.');
     } on FirebaseAuthException catch (e) {
-      print('Firebase Auth Exception: ${e.code} - ${e.message}');
       if (e.code == 'weak-password') {
         throw Exception('Şifre çok zayıf. En az 8 karakter olmalı.');
       } else if (e.code == 'email-already-in-use') {
         throw Exception('Bu e-posta adresi zaten kullanımda.');
-      } else if (e.code == 'invalid-email') {
-        throw Exception('Geçersiz e-posta adresi.');
-      } else {
-        throw Exception('Kayıt başarısız: ${e.message}');
       }
+      throw Exception('Kayıt başarısız: ${e.message}');
     } catch (e) {
-      print('Genel Exception: $e');
-      throw Exception('Kayıt sırasında hata oluştu: ${e.toString()}');
+      throw Exception('Kayıt sırasında hata oluştu: $e');
     }
   }
 
-  // Giriş yap (مصحح)
-  // Giriş yap (مبسط - بدون Firestore تحقق أول)
+
+  // ===== Login =====
   Future<UserModel?> loginUser({
     required String email,
     required String password,
   }) async {
     try {
-      print('Giriş denemesi: $email');
-
-      // 1. فقط Firebase Authentication ile giriş yap
-      UserCredential userCredential = await _auth
+      final userCredential = await _auth
           .signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       )
           .timeout(_timeoutDuration);
 
-      final userId = userCredential.user!.uid;
-      print('✅ Firebase Auth başarılı, User ID: $userId');
+      final u = userCredential.user;
+      if (u == null) return null;
 
-      // 2. مباشرة أنشئ UserModel من بيانات Auth فقط
-      UserModel userModel = UserModel(
-        id: userId,
-        email: email.trim(),
-        name: userCredential.user!.displayName ?? 'Kullanıcı',
-        role: 'ogrenci', // افتراضي - يمكن تعديله لاحقاً
+      // ✅ أهم تعديل: بعد تسجيل الدخول جيب بياناته من Firestore
+      final data = await getUserData(u.uid);
+      if (data != null) return data;
+
+      // fallback
+      return UserModel(
+        id: u.uid,
+        email: u.email ?? email.trim(),
+        name: u.displayName ?? 'Kullanıcı',
+        role: '',
         createdAt: DateTime.now(),
       );
-
-      print('✅ Giriş başarılı! UserModel oluşturuldu');
-      return userModel;
-
     } on TimeoutException {
-      print('❌ Giriş timeout!');
-      throw Exception('Giriş işlemi zaman aşımına uğradı. İnternet bağlantınızı kontrol edin.');
+      throw Exception('Giriş işlemi zaman aşımına uğradı.');
     } on FirebaseAuthException catch (e) {
-      print('Firebase Auth Exception: ${e.code} - ${e.message}');
       if (e.code == 'user-not-found') {
         throw Exception('Bu e-posta ile kayıtlı kullanıcı bulunamadı.');
       } else if (e.code == 'wrong-password') {
@@ -210,101 +213,53 @@ class AuthService {
       } else if (e.code == 'user-disabled') {
         throw Exception('Bu hesap devre dışı bırakıldı.');
       } else if (e.code == 'too-many-requests') {
-        throw Exception('Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.');
+        throw Exception('Çok fazla deneme yaptınız. Daha sonra tekrar deneyin.');
       } else if (e.code == 'network-request-failed') {
-        throw Exception('Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.');
-      } else {
-        throw Exception('Giriş sırasında hata oluştu: ${e.message}');
+        throw Exception('Ağ bağlantısı hatası.');
       }
-    } catch (e) {
-      print('Genel Exception: $e');
-      throw Exception('Giriş sırasında hata oluştu: ${e.toString()}');
+      throw Exception('Giriş sırasında hata oluştu: ${e.message}');
     }
   }
 
-  // Çıkış yap
-  Future<void> logout() async {
+  Future<void> logout() async => _auth.signOut();
+
+  // ===== Password Reset =====
+  Future<void> sendPasswordResetEmail(String email) async {
     try {
-      print('Çıkış yapılıyor...');
-      await _auth.signOut();
-      print('✅ Çıkış başarılı');
+      await _auth.sendPasswordResetEmail(
+        email: email.trim(),
+      ).timeout(_timeoutDuration);
+    } on TimeoutException {
+      throw Exception('İşlem zaman aşımına uğradı.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.');
+      } else if (e.code == 'invalid-email') {
+        throw Exception('Geçersiz e-posta formatı.');
+      }
+      throw Exception('Şifre sıfırlama e-postası gönderilemedi: ${e.message}');
     } catch (e) {
-      print('Çıkış hatası: $e');
-      throw Exception('Çıkış sırasında hata oluştu: ${e.toString()}');
+      throw Exception('Şifre sıfırlama işlemi başarısız: ${e.toString()}');
     }
   }
 
-  // Kullanıcı bilgilerini getir
   Future<UserModel?> getUserData(String userId) async {
     try {
-      DocumentSnapshot userDoc = await _firestore
+      final doc = await _firestore
           .collection('users')
           .doc(userId)
           .get()
           .timeout(_timeoutDuration);
 
-      if (userDoc.exists) {
-        print('✅ Kullanıcı bilgileri başarıyla alındı');
-        return UserModel.fromMap(
-          userDoc.data() as Map<String, dynamic>,
-          userId,
-        );
-      }
-      print('⚠️ Kullanıcı bulunamadı: $userId');
-      return null;
-    } catch (e) {
-      print('❌ Kullanıcı bilgileri alınamadı: $e');
+      if (!doc.exists) return null;
+
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>, userId);
+    } catch (_) {
       return null;
     }
   }
 
-  // Öğrenci verilerini getir - مؤقتاً معلق
-  Future<Map<String, dynamic>?> getStudentData(String userId) async {
-    try {
-      // أولاً تحقق من وجود collection
-      final collectionExists = await _checkCollectionExists('students');
-      if (!collectionExists) {
-        print('⚠️ Students koleksiyonu mevcut değil');
-        return null;
-      }
-
-      DocumentSnapshot studentDoc = await _firestore
-          .collection('students')
-          .doc(userId)
-          .get()
-          .timeout(_timeoutDuration);
-
-      return studentDoc.data() as Map<String, dynamic>?;
-    } catch (e) {
-      print('Öğrenci verileri alınamadı: $e');
-      return null;
-    }
-  }
-
-  // Şirket verilerini getir - مؤقتاً معلق
-  Future<Map<String, dynamic>?> getCompanyData(String userId) async {
-    try {
-      // أولاً تحقق من وجود collection
-      final collectionExists = await _checkCollectionExists('companies');
-      if (!collectionExists) {
-        print('⚠️ Companies koleksiyonu mevcut değil');
-        return null;
-      }
-
-      DocumentSnapshot companyDoc = await _firestore
-          .collection('companies')
-          .doc(userId)
-          .get()
-          .timeout(_timeoutDuration);
-
-      return companyDoc.data() as Map<String, dynamic>?;
-    } catch (e) {
-      print('Şirket verileri alınamadı: $e');
-      return null;
-    }
-  }
-
-  // Öğrenci profilini güncelle
+  // ===== Update Student Profile =====
   Future<void> updateStudentProfile({
     required String userId,
     required String name,
@@ -314,32 +269,43 @@ class AuthService {
     String? phone,
     List<String>? skills,
     String? bio,
+    String? grade,
+    List<String>? hobbies,
   }) async {
-    try {
-      final updateData = _cleanData({
-        'name': name,
-        'university': university,
-        'department': department,
-        'studentNo': studentNo,
-        'phone': phone,
-        'skills': skills,
-        'bio': bio,
-      });
+    final updateData = _cleanData({
+      'name': name,
+      'university': university,
+      'department': department,
+      'studentNo': studentNo,
+      'phone': phone,
+      'skills': skills ?? [],
+      'bio': bio,
+      'grade': grade,
+      'hobbies': hobbies ?? [],
+      'role': 'ogrenci',
+      'status': 'active',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set(updateData, SetOptions(merge: true))
-          .timeout(_timeoutDuration);
-
-      print('✅ Öğrenci profili güncellendi');
-    } catch (e) {
-      print('Öğrenci profili güncellenemedi: $e');
-      rethrow;
-    }
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .set(updateData, SetOptions(merge: true))
+        .timeout(_timeoutDuration);
   }
 
-  // Şirket profilini güncelle
+  // ✅ تحديث صورة الطالب (اختياري بس مفيد)
+  Future<void> updateStudentProfileImage({
+    required String userId,
+    required String imageUrl,
+  }) async {
+    await _firestore.collection('users').doc(userId).set({
+      'profileImageUrl': imageUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).timeout(_timeoutDuration);
+  }
+
+  // ===== Update Company Profile =====
   Future<void> updateCompanyProfile({
     required String userId,
     required String companyName,
@@ -349,38 +315,89 @@ class AuthService {
     required String phone,
     String? website,
     String? companyDescription,
+    String? taxNo,
+    String? companySize,
   }) async {
-    try {
-      final updateData = _cleanData({
-        'companyName': companyName,
-        'name': contactPerson,
-        'sector': sector,
-        'address': address,
-        'companyPhone': phone,
-        'website': website,
-        'companyDescription': companyDescription,
-      });
+    // 1) users (أساسي)
+    final usersUpdate = _cleanData({
+      'companyName': companyName,
+      'name': contactPerson, // ✅ contact person عندك مخزن بـ name
+      'sector': sector,
+      'address': address,
+      'companyPhone': phone,
+      'website': website,
+      'companyDescription': companyDescription,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set(updateData, SetOptions(merge: true))
-          .timeout(_timeoutDuration);
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .set(usersUpdate, SetOptions(merge: true))
+        .timeout(_timeoutDuration);
 
-      print('✅ Şirket profili güncellendi');
-    } catch (e) {
-      print('Şirket profili güncellenemedi: $e');
-      rethrow;
-    }
+    // 2) profiles (تفاصيل + status/admin fields لا تلمسها)
+    final profileUpdate = _cleanData({
+      'userId': userId,
+      'role': 'sirket',
+      'companyName': companyName,
+      'contactPerson': contactPerson,
+      'sector': sector,
+      'address': address,
+      'companyPhone': phone,
+      'website': website,
+      'companyDescription': companyDescription,
+      'taxNo': taxNo,
+      'companySize': companySize,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // ✅ نستخدم نفس docId = userId (أفضل توحيداً)
+    await _firestore
+        .collection('profiles')
+        .doc(userId)
+        .set(profileUpdate, SetOptions(merge: true))
+        .timeout(_timeoutDuration);
   }
 
+
+  // ✅ تحديث شعار الشركة داخل users
+  Future<void> updateCompanyLogo({
+    required String userId,
+    required String logoUrl,
+  }) async {
+    // users (اختياري)
+    await _firestore.collection('users').doc(userId).set({
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).timeout(_timeoutDuration);
+
+    // profiles (المكان الصحيح)
+    await _firestore.collection('profiles').doc(userId).set({
+      'companyLogoUrl': logoUrl.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).timeout(_timeoutDuration);
+  }
+
+  Future<void> updateCompanySize({
+    required String userId,
+    required String companySize,
+  }) async {
+    await _firestore.collection('profiles').doc(userId).set({
+      'companySize': companySize.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true)).timeout(_timeoutDuration);
+  }
+
+
+  // ===== Utils =====
   Map<String, dynamic> _cleanData(Map<String, dynamic?> data) {
     final cleaned = <String, dynamic>{};
     data.forEach((key, value) {
       if (value == null) return;
       if (value is String) {
-        if (value.trim().isEmpty) return;
-        cleaned[key] = value.trim();
+        final v = value.trim();
+        if (v.isEmpty) return;
+        cleaned[key] = v;
       } else if (value is List) {
         if (value.isEmpty) return;
         cleaned[key] = value;
@@ -389,67 +406,5 @@ class AuthService {
       }
     });
     return cleaned;
-  }
-
-  // Yardımcı fonksiyon: Collection var mı kontrol et
-  Future<bool> _checkCollectionExists(String collectionName) async {
-    try {
-      final snapshot = await _firestore
-          .collection(collectionName)
-          .limit(1)
-          .get()
-          .timeout(const Duration(seconds: 5));
-      return snapshot.docs.isNotEmpty;
-    } catch (e) {
-      print('$collectionName kontrol hatası: $e');
-      return false;
-    }
-  }
-
-  // Şifre sıfırlama
-  Future<void> resetPassword(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
-      print('✅ Şifre sıfırlama e-postası gönderildi');
-    } catch (e) {
-      print('❌ Şifre sıfırlama hatası: $e');
-      throw Exception('Şifre sıfırlama hatası: ${e.toString()}');
-    }
-  }
-
-  // Mevcut kullanıcıyı kontrol et
-  User? getCurrentUser() {
-    return _auth.currentUser;
-  }
-
-  // Kullanıcı durumunu dinle
-  Stream<User?> get userState {
-    return _auth.authStateChanges();
-  }
-
-  // Kullanıcı durumunu kontrol et
-  Future<bool> isLoggedIn() async {
-    return _auth.currentUser != null;
-  }
-
-  // Kullanıcı ID'sini al
-  String? getCurrentUserId() {
-    return _auth.currentUser?.uid;
-  }
-
-  // Firestore bağlantı testi
-  Future<bool> testFirestoreConnection() async {
-    try {
-      await _firestore
-          .collection('users')
-          .limit(1)
-          .get()
-          .timeout(const Duration(seconds: 5));
-      print('✅ Firestore bağlantısı başarılı');
-      return true;
-    } catch (e) {
-      print('❌ Firestore bağlantısı başarısız: $e');
-      return false;
-    }
   }
 }

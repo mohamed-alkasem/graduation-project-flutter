@@ -2,8 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:bitirmetezimobil/widgets/custom_text_field.dart';
 import 'package:bitirmetezimobil/widgets/gradient_button.dart';
+
+import '../../../core/firebase/auth_service.dart';
 import 'sirket_register.dart';
 import '../../../screens/sirket/sirket_dashboard.dart';
+import '../forgot_password_screen.dart';
 
 class SirketLogin extends StatefulWidget {
   const SirketLogin({super.key});
@@ -19,6 +22,8 @@ class _SirketLoginState extends State<SirketLogin> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +53,7 @@ class _SirketLoginState extends State<SirketLogin> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 48), // For balance
+                  const SizedBox(width: 48),
                 ],
               ),
               const SizedBox(height: 10),
@@ -102,7 +107,7 @@ class _SirketLoginState extends State<SirketLogin> {
                           prefixIcon: Icons.email,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
+                            if (value == null || value.trim().isEmpty) {
                               return 'Lütfen e-posta adresinizi girin';
                             }
                             return null;
@@ -129,12 +134,16 @@ class _SirketLoginState extends State<SirketLogin> {
 
                         const SizedBox(height: 16),
 
-                        // Şifremi Unuttum
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // TODO: Şifremi unuttum sayfası
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ForgotPasswordScreen(),
+                                ),
+                              );
                             },
                             child: const Text(
                               'Şifremi unuttum',
@@ -145,7 +154,6 @@ class _SirketLoginState extends State<SirketLogin> {
 
                         const SizedBox(height: 30),
 
-                        // Giriş Butonu
                         GradientButton(
                           text: 'ŞİRKET GİRİŞİ YAP',
                           onPressed: _loginCompany,
@@ -157,7 +165,6 @@ class _SirketLoginState extends State<SirketLogin> {
 
                         const SizedBox(height: 20),
 
-                        // Hesap Oluştur
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -184,7 +191,6 @@ class _SirketLoginState extends State<SirketLogin> {
 
                         const SizedBox(height: 30),
 
-                        // Ek Bilgi
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -221,23 +227,57 @@ class _SirketLoginState extends State<SirketLogin> {
   }
 
   Future<void> _loginCompany() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      // TODO: Firebase giriş işlemleri burada yapılacak
-      // AuthService().loginCompany(...)
+    setState(() => _isLoading = true);
 
-      await Future.delayed(const Duration(seconds: 1)); // Simülasyon
+    try {
+      // ✅ loginUser عندك صار يرجّع بيانات Firestore كاملة
+      final userData = await _authService.loginUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-      setState(() => _isLoading = false);
+      if (userData == null) {
+        throw Exception('Giriş başarısız. Tekrar deneyin.');
+      }
 
-      // Başarılı giriş sonrası dashboard'a yönlendir
+      // ✅ لازم يكون شركة
+      if (userData.role != 'sirket') {
+        await _authService.logout();
+        throw Exception('Bu hesap şirket hesabı değil');
+      }
+
+      // ✅ تحقق حالة الحساب (Admin Approval)
+      final status = (userData.status).toLowerCase(); // active / pending / rejected ...
+      if (status == 'pending' || status == 'pending_approval') {
+        await _authService.logout();
+        throw Exception('Hesabınız yönetici onayı bekliyor');
+      }
+      if (status == 'rejected') {
+        await _authService.logout();
+        throw Exception('Hesabınız reddedildi. Yönetici ile iletişime geçin.');
+      }
+
+      // ✅ نجاح
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => SirketDashboard(email: _emailController.text),
+          builder: (context) => const SirketDashboard(),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

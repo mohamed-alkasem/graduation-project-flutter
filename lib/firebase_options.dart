@@ -41,54 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBr5aUGE04vkKIzeuupQ3uNNb6Fg_ol-vs',
-    appId: '1:316516565076:web:68f256c00bad67e230adc1',
-    messagingSenderId: '316516565076',
-    projectId: 'bitirmetezi-66376',
-    authDomain: 'bitirmetezi-66376.firebaseapp.com',
-    databaseURL: 'https://bitirmetezi-66376-default-rtdb.firebaseio.com',
-    storageBucket: 'bitirmetezi-66376.firebasestorage.app',
-    measurementId: 'G-7ZK6MLMMER',
+    apiKey: 'AIzaSyABY0_S6loAbNHJAjxUjCLzXpT2i1ypstY',
+    appId: '1:344041336788:web:0f75fc502403ba6f7db041',
+    messagingSenderId: '344041336788',
+    projectId: 'bitirmetezi-7d032',
+    authDomain: 'bitirmetezi-7d032.firebaseapp.com',
+    storageBucket: 'bitirmetezi-7d032.firebasestorage.app',
+    measurementId: 'G-N7EB0344MZ',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBdf2ybTX3ve_mZ4Dt-OGE7RNMmLA0FcYc',
-    appId: '1:316516565076:android:85a734db42d151b830adc1',
-    messagingSenderId: '316516565076',
-    projectId: 'bitirmetezi-66376',
-    databaseURL: 'https://bitirmetezi-66376-default-rtdb.firebaseio.com',
-    storageBucket: 'bitirmetezi-66376.firebasestorage.app',
+    apiKey: 'AIzaSyDEx5aKbje1MLy9VBUL_hTs0rsrk2RuVCs',
+    appId: '1:344041336788:android:6670667d5281c8da7db041',
+    messagingSenderId: '344041336788',
+    projectId: 'bitirmetezi-7d032',
+    storageBucket: 'bitirmetezi-7d032.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAJcBWLWfu8hZEL6Q3_38yAZTY8MrtqYBE',
-    appId: '1:316516565076:ios:f673f83622a1bdcd30adc1',
-    messagingSenderId: '316516565076',
-    projectId: 'bitirmetezi-66376',
-    databaseURL: 'https://bitirmetezi-66376-default-rtdb.firebaseio.com',
-    storageBucket: 'bitirmetezi-66376.firebasestorage.app',
+    apiKey: 'AIzaSyASeByybyjT666Ygk-ZFSUM96gm7SyeSkM',
+    appId: '1:344041336788:ios:3483b80531c864587db041',
+    messagingSenderId: '344041336788',
+    projectId: 'bitirmetezi-7d032',
+    storageBucket: 'bitirmetezi-7d032.firebasestorage.app',
     iosBundleId: 'com.example.bitirmetezimobil',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAJcBWLWfu8hZEL6Q3_38yAZTY8MrtqYBE',
-    appId: '1:316516565076:ios:f673f83622a1bdcd30adc1',
-    messagingSenderId: '316516565076',
-    projectId: 'bitirmetezi-66376',
-    databaseURL: 'https://bitirmetezi-66376-default-rtdb.firebaseio.com',
-    storageBucket: 'bitirmetezi-66376.firebasestorage.app',
+    apiKey: 'AIzaSyASeByybyjT666Ygk-ZFSUM96gm7SyeSkM',
+    appId: '1:344041336788:ios:3483b80531c864587db041',
+    messagingSenderId: '344041336788',
+    projectId: 'bitirmetezi-7d032',
+    storageBucket: 'bitirmetezi-7d032.firebasestorage.app',
     iosBundleId: 'com.example.bitirmetezimobil',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBr5aUGE04vkKIzeuupQ3uNNb6Fg_ol-vs',
-    appId: '1:316516565076:web:762b288ba9fae47530adc1',
-    messagingSenderId: '316516565076',
-    projectId: 'bitirmetezi-66376',
-    authDomain: 'bitirmetezi-66376.firebaseapp.com',
-    databaseURL: 'https://bitirmetezi-66376-default-rtdb.firebaseio.com',
-    storageBucket: 'bitirmetezi-66376.firebasestorage.app',
-    measurementId: 'G-TH6MHBRF2G',
+    apiKey: 'AIzaSyABY0_S6loAbNHJAjxUjCLzXpT2i1ypstY',
+    appId: '1:344041336788:web:0e9e8958ddddbed67db041',
+    messagingSenderId: '344041336788',
+    projectId: 'bitirmetezi-7d032',
+    authDomain: 'bitirmetezi-7d032.firebaseapp.com',
+    storageBucket: 'bitirmetezi-7d032.firebasestorage.app',
+    measurementId: 'G-NKSKJ0R74B',
   );
-
 }

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:bitirmetezimobil/widgets/custom_text_field.dart';
 import 'package:bitirmetezimobil/widgets/gradient_button.dart';
+import '../../../../core/firebase/auth_service.dart';
 import 'ogrenci_register.dart';
 import '../../../screens/ogrenci/ogrenci_dashboard.dart';
+import '../forgot_password_screen.dart';
 
 class OgrenciLogin extends StatefulWidget {
   const OgrenciLogin({super.key});
@@ -135,7 +137,12 @@ class _OgrenciLoginState extends State<OgrenciLogin> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // TODO: Şifremi unuttum sayfası
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ForgotPasswordScreen(),
+                                ),
+                              );
                             },
                             child: const Text(
                               'Şifremi unuttum',
@@ -212,11 +219,26 @@ class _OgrenciLoginState extends State<OgrenciLogin> {
         print('✅ Firebase Auth başarılı, User ID: ${user.uid}');
         print('✅ Email: ${user.email}');
 
-        // مباشرة الانتقال للـ Dashboard
+        // التحقق من role
+        final AuthService authService = AuthService();
+        final userData = await authService.getUserData(user.uid);
+
+        if (userData == null) {
+          throw Exception('Kullanıcı bilgileri bulunamadı');
+        }
+
+        // ✅ لازم يكون طالب
+        if (userData.role != 'ogrenci') {
+          await authService.logout();
+          throw Exception('Bu hesap öğrenci hesabı değil');
+        }
+
+        // ✅ نجاح
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => OgrenciDashboard(email: user.email ?? ''),
+            builder: (context) => const OgrenciDashboard(),
           ),
         );
 
