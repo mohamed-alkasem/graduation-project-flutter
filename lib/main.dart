@@ -1,8 +1,13 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+
+// Theme
+import 'core/theme/theme_provider.dart';
+import 'core/theme/app_theme.dart';
 
 // Auth
 import 'screens/auth/welcome_screen.dart';
@@ -32,48 +37,48 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Yetenek Keşif Platformu',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFF2C3E50),
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        fontFamily: 'Inter',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2C3E50),
-          elevation: 0,
-        ),
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Yetenek Keşif Platformu',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const WelcomeScreen(),
+
+              // Öğrenci
+              '/ogrenci/login': (context) => const OgrenciLogin(),
+              '/ogrenci/register': (context) => const OgrenciRegister(),
+
+              // ✅ بدون email
+              '/ogrenci/dashboard': (context) => const OgrenciDashboard(),
+
+              // ✅ بروفايل الطالب الصحيح
+              '/ogrenci/profile': (context) => const OgrenciProfileScreen(),
+
+              // Şirket
+              '/sirket/login': (context) => const SirketLogin(),
+              '/sirket/register': (context) => const SirketRegister(),
+
+              // ✅ بدون email
+              '/sirket/dashboard': (context) => const SirketDashboard(),
+            },
+
+            onGenerateRoute: (settings) {
+              if (settings.name == '/login') {
+                return MaterialPageRoute(builder: (context) => const OgrenciLogin());
+              }
+              return null;
+            },
+          );
+        },
       ),
-
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const WelcomeScreen(),
-
-        // Öğrenci
-        '/ogrenci/login': (context) => const OgrenciLogin(),
-        '/ogrenci/register': (context) => const OgrenciRegister(),
-
-        // ✅ بدون email
-        '/ogrenci/dashboard': (context) => const OgrenciDashboard(),
-
-        // ✅ بروفايل الطالب الصحيح
-        '/ogrenci/profile': (context) => const OgrenciProfileScreen(),
-
-        // Şirket
-        '/sirket/login': (context) => const SirketLogin(),
-        '/sirket/register': (context) => const SirketRegister(),
-
-        // ✅ بدون email
-        '/sirket/dashboard': (context) => const SirketDashboard(),
-
-      },
-
-      onGenerateRoute: (settings) {
-        if (settings.name == '/login') {
-          return MaterialPageRoute(builder: (context) => const OgrenciLogin());
-        }
-        return null;
-      },
     );
   }
 }

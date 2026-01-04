@@ -18,6 +18,7 @@ class UserModel {
   String? bio;
   String? grade; // الصف (السنة الدراسية)
   List<String>? hobbies; // الهوايات
+  int score; // Puan (projeler ve aktivitelere göre)
 
   // Company
   String? companyName;
@@ -47,6 +48,7 @@ class UserModel {
     this.bio,
     this.grade,
     this.hobbies,
+    this.score = 0,
 
     // Company
     this.companyName,
@@ -105,6 +107,7 @@ class UserModel {
       bio: map['bio']?.toString(),
       grade: map['grade']?.toString(),
       hobbies: hobbiesList,
+      score: (map['score'] as num?)?.toInt() ?? 0,
 
       // Company
       companyName: map['companyName']?.toString(),
@@ -144,6 +147,7 @@ class UserModel {
     if (bio != null && bio!.trim().isNotEmpty) data['bio'] = bio!.trim();
     if (grade != null && grade!.trim().isNotEmpty) data['grade'] = grade!.trim();
     if (hobbies != null && hobbies!.isNotEmpty) data['hobbies'] = hobbies;
+    data['score'] = score;
 
     // Company
     if (companyName != null && companyName!.trim().isNotEmpty) data['companyName'] = companyName!.trim();
@@ -193,6 +197,7 @@ class UserModel {
     String? bio,
     String? grade,
     List<String>? hobbies,
+    int? score,
     String? companyName,
     String? sector,
     String? companyPhone,
@@ -216,6 +221,7 @@ class UserModel {
       bio: bio ?? this.bio,
       grade: grade ?? this.grade,
       hobbies: hobbies ?? this.hobbies,
+      score: score ?? this.score,
       companyName: companyName ?? this.companyName,
       sector: sector ?? this.sector,
       companyPhone: companyPhone ?? this.companyPhone,

@@ -1,10 +1,12 @@
 // lib/screens/ogrenci/ogrenci_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/firebase/auth_service.dart';
 import '../../core/models/user_model.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/theme/theme_provider.dart';
 import '../../widgets/gradient_button.dart';
 
 import 'portfolio_screen.dart';
@@ -116,23 +118,23 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: _isLoading ? _buildLoadingScreen() : _buildDashboard(),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
   Widget _buildLoadingScreen() {
-    return const Center(
+    final theme = Theme.of(context);
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFF1ABC9C)),
-          SizedBox(height: 20),
+          CircularProgressIndicator(color: theme.colorScheme.secondary),
+          const SizedBox(height: 20),
           Text(
             'Yükleniyor...',
             style: TextStyle(
-              color: Color(0xFF2C3E50),
+              color: theme.textTheme.bodyLarge?.color,
               fontSize: 16,
             ),
           ),
@@ -277,6 +279,19 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: _refreshData,
+            tooltip: 'Yenile',
+          ),
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return IconButton(
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.white,
+                ),
+                onPressed: () => themeProvider.toggleTheme(),
+                tooltip: themeProvider.isDarkMode ? 'Açık Tema' : 'Koyu Tema',
+              );
+            },
           ),
         ],
       ),
@@ -310,11 +325,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   }
 
   Widget _buildWelcomeCard() {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -332,27 +348,27 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1ABC9C).withOpacity(0.1),
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.emoji_events, color: Color(0xFF1ABC9C)),
+                child: Icon(Icons.emoji_events, color: theme.colorScheme.secondary),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Hoş Geldin!',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
+                        color: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                     Text(
                       'Başarılarını paylaş, yeteneklerini keşfet',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 14, color: theme.textTheme.bodySmall?.color),
                     ),
                   ],
                 ),
@@ -379,7 +395,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
 
   // ✅ حاليا ما عندك rating حقيقي من DB، خليها 0 أو اعملها من users إذا حبيت
   Widget _buildTalentScoreCard() {
-    final double score = 0.0;
+    final int score = _student?.score ?? 0;
 
     return Container(
       width: double.infinity,
@@ -413,14 +429,14 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    score.toStringAsFixed(1),
+                    '$score',
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const Text('/10', style: TextStyle(fontSize: 14, color: Colors.white)),
+                  const Text('Puan', style: TextStyle(fontSize: 14, color: Colors.white)),
                 ],
               ),
             ),
@@ -439,22 +455,17 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  _getTalentLevel(score),
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                const Text(
+                  'Proje Puanı',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: score / 10,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  color: const Color(0xFF1ABC9C),
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 8),
                 Text(
-                  '${(score * 10).toInt()}% tamamlandı',
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                  'Bu puan, projelerinize göre otomatik olarak hesaplanmaktadır.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
                 ),
               ],
             ),
@@ -465,6 +476,7 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   }
 
   Widget _buildStatisticsSection() {
+    final theme = Theme.of(context);
     // إذا بدك توصلها من DB لاحقاً، هون مكانها
     const portfolioCount = '0';
     const completedProjects = '0';
@@ -474,12 +486,12 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '📊 İstatistiklerim',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
+            color: theme.textTheme.bodyLarge?.color,
           ),
         ),
         const SizedBox(height: 16),
@@ -536,10 +548,11 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
     required IconData icon,
     required Color color,
   }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -576,12 +589,13 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   }
 
   Widget _buildQuickAccessSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '🚀 Hızlı Erişim',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
         ),
         const SizedBox(height: 16),
         GridView.count(
@@ -657,18 +671,19 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
   }
 
   Widget _buildRecentActivity() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '📝 Son Aktivite',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, spreadRadius: 2),
@@ -727,26 +742,33 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2C3E50),
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
+                style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodySmall?.color),
               ),
             ],
           ),
         ),
-        Text(time, style: const TextStyle(fontSize: 12, color: Color(0xFFBDC3C7))),
+        Text(
+          time,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+          ),
+        ),
       ],
     );
   }
 
   BottomNavigationBar _buildBottomNavigationBar() {
+    final theme = Theme.of(context);
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       items: const <BottomNavigationBarItem>[
@@ -757,10 +779,10 @@ class _OgrenciDashboardState extends State<OgrenciDashboard> {
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
       ],
       currentIndex: _selectedIndex,
-      selectedItemColor: const Color(0xFF1ABC9C),
-      unselectedItemColor: const Color(0xFF95A5A6),
+      selectedItemColor: theme.colorScheme.secondary,
+      unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
       showUnselectedLabels: true,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       elevation: 10,
       onTap: _onItemTapped,
     );

@@ -109,6 +109,31 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                  const SizedBox(height: 16),
+                  // Score Display
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Color(0xFFF39C12), size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${student.score} Puan',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -118,6 +143,64 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Score Section
+                  _buildSection(
+                    'Puan',
+                    Icons.star,
+                    [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF39C12).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFF39C12), width: 2),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star, color: Color(0xFFF39C12), size: 32),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Toplam Puan',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF7F8C8D),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${student.score}',
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFF39C12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Bu puan, öğrencinin projeleri ve aktivitelerine göre otomatik olarak hesaplanmaktadır.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF7F8C8D),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // Contact Information
                   _buildSection(
                     'İletişim Bilgileri',

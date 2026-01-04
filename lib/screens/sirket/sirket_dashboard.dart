@@ -1,11 +1,13 @@
 // lib/screens/sirket/sirket_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/firebase/auth_service.dart';
 import '../../core/models/user_model.dart';
 import '../../core/models/profile_model.dart';
 import '../../core/services/profile_service.dart';
+import '../../core/theme/theme_provider.dart';
 import '../../widgets/gradient_button.dart';
 import 'sirket_profile_screen.dart';
 import 'student_search_screen.dart';
@@ -115,20 +117,23 @@ class _SirketDashboardState extends State<SirketDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: _isLoading ? _buildLoadingScreen() : _buildDashboard(),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
   Widget _buildLoadingScreen() {
-    return const Center(
+    final theme = Theme.of(context);
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFFE74C3C)),
-          SizedBox(height: 20),
-          Text('Yükleniyor...', style: TextStyle(color: Color(0xFF2C3E50), fontSize: 16)),
+          CircularProgressIndicator(color: theme.colorScheme.primary),
+          const SizedBox(height: 20),
+          Text(
+            'Yükleniyor...',
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16),
+          ),
         ],
       ),
     );
@@ -205,16 +210,33 @@ class _SirketDashboardState extends State<SirketDashboard> {
               ],
             ),
           ),
-          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _refreshData),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshData,
+            tooltip: 'Yenile',
+          ),
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return IconButton(
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.white,
+                ),
+                onPressed: () => themeProvider.toggleTheme(),
+                tooltip: themeProvider.isDarkMode ? 'Açık Tema' : 'Koyu Tema',
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
   Widget _buildHomeTab() {
+    final theme = Theme.of(context);
     return RefreshIndicator(
       onRefresh: _refreshData,
-      color: const Color(0xFFE74C3C),
+      color: theme.colorScheme.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
@@ -231,23 +253,24 @@ class _SirketDashboardState extends State<SirketDashboard> {
   }
 
   Widget _buildWelcomeCard() {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, spreadRadius: 2)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Hoş Geldiniz!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
           ),
           const SizedBox(height: 8),
-          Text(_companyName, style: const TextStyle(color: Color(0xFF7F8C8D))),
+          Text(_companyName, style: TextStyle(color: theme.textTheme.bodySmall?.color)),
           const SizedBox(height: 20),
           GradientButton(
             text: 'ÖĞRENCİ ARA',
@@ -289,11 +312,12 @@ class _SirketDashboardState extends State<SirketDashboard> {
         statusDescription = 'Hesabınız yönetici onayı bekliyor.';
     }
 
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, spreadRadius: 2)],
       ),
@@ -311,7 +335,7 @@ class _SirketDashboardState extends State<SirketDashboard> {
               children: [
                 Text(statusText, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: statusColor)),
                 const SizedBox(height: 6),
-                Text(statusDescription, style: const TextStyle(color: Color(0xFF7F8C8D))),
+                Text(statusDescription, style: TextStyle(color: theme.textTheme.bodySmall?.color)),
               ],
             ),
           ),
@@ -335,6 +359,7 @@ class _SirketDashboardState extends State<SirketDashboard> {
   Widget _buildSearchTab() => const StudentSearchScreen();
 
   BottomNavigationBar _buildBottomNavigationBar() {
+    final theme = Theme.of(context);
     return BottomNavigationBar(
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Anasayfa'),
@@ -344,10 +369,11 @@ class _SirketDashboardState extends State<SirketDashboard> {
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
       ],
       currentIndex: _selectedIndex,
-      selectedItemColor: const Color(0xFFE74C3C),
-      unselectedItemColor: const Color(0xFF95A5A6),
+      selectedItemColor: theme.colorScheme.primary,
+      unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
       showUnselectedLabels: true,
       type: BottomNavigationBarType.fixed,
+      backgroundColor: theme.colorScheme.surface,
       onTap: _onItemTapped,
     );
   }

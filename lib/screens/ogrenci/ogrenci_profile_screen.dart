@@ -383,6 +383,7 @@ class _OgrenciProfileScreenState extends State<OgrenciProfileScreen> {
 
   Widget _buildInfoCard() {
     final skillsCount = (_userData?.skills ?? []).length;
+    final score = _userData?.score ?? 0;
 
     return Container(
       width: double.infinity,
@@ -407,6 +408,46 @@ class _OgrenciProfileScreenState extends State<OgrenciProfileScreen> {
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Color(0xFF2C3E50),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Score Display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF39C12), Color(0xFFE67E22)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.star, color: Colors.white, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Toplam Puan',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        '$score',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),

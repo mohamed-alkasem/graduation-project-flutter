@@ -347,7 +347,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                 const SizedBox(height: 12),
               ],
 
-              // Projects Count
+              // Projects Count and Score
               Row(
                 children: [
                   const Icon(Icons.folder, size: 16, color: Color(0xFF1ABC9C)),
@@ -357,6 +357,17 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     style: const TextStyle(
                       color: Color(0xFF1ABC9C),
                       fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Icon(Icons.star, size: 16, color: Color(0xFFF39C12)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${student.score} Puan',
+                    style: const TextStyle(
+                      color: Color(0xFFF39C12),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                 ],

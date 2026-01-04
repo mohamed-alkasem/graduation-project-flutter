@@ -365,6 +365,9 @@ class _OgrenciRegisterState extends State<OgrenciRegister> {
             ? _skillsController.text.split(',').map((e) => e.trim()).toList()
             : [],
         'userType': 'ogrenci',
+        'role': 'ogrenci',
+        'score': 0,
+        'status': 'active',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
